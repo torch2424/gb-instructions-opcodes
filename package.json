@@ -1,0 +1,30 @@
+{
+  "name": "gb-instructions-opcodes",
+  "version": "0.0.1",
+  "description": "Game Boy / Game Boy Color Instructions and Opcodes Reference as an ES Module and JSON",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/torch2424/gb-instructions-opcodes.git"
+  },
+  "keywords": [
+    "Game",
+    "Boy",
+    "GameBoy",
+    "Color",
+    "Opcode",
+    "Emulator",
+    "JSON",
+    "instruction",
+    "CPU"
+  ],
+  "author": "Aaron Turner",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/torch2424/gb-instructions-opcodes/issues"
+  },
+  "homepage": "https://github.com/torch2424/gb-instructions-opcodes#readme"
+}
