@@ -1,7 +1,44 @@
+'use strict';
+
+Object.defineProperty(exports, '__esModule', { value: true });
+
+function _defineProperty(obj, key, value) {
+  if (key in obj) {
+    Object.defineProperty(obj, key, {
+      value: value,
+      enumerable: true,
+      configurable: true,
+      writable: true
+    });
+  } else {
+    obj[key] = value;
+  }
+
+  return obj;
+}
+
+function _objectSpread(target) {
+  for (var i = 1; i < arguments.length; i++) {
+    var source = arguments[i] != null ? arguments[i] : {};
+    var ownKeys = Object.keys(source);
+
+    if (typeof Object.getOwnPropertySymbols === 'function') {
+      ownKeys = ownKeys.concat(Object.getOwnPropertySymbols(source).filter(function (sym) {
+        return Object.getOwnPropertyDescriptor(source, sym).enumerable;
+      }));
+    }
+
+    ownKeys.forEach(function (key) {
+      _defineProperty(target, key, source[key]);
+    });
+  }
+
+  return target;
+}
+
 // Information about all the opcodes for the GB
 // Built with: https://rednex.github.io/rgbds/gbz80.7.html
 // http://pastraiser.com/cpu/gameboy/gameboy_opcodes.html
-
 const getFlag = (flag, symbol) => {
   let response = {};
 
@@ -18,7 +55,6 @@ const getFlag = (flag, symbol) => {
       shorthand: `${flag}`,
       description: `The flag is set to ${flag}.`
     };
-
     return response;
   }
 
@@ -48,25 +84,31 @@ const generateFlags = (zeroFlag, subtractFlag, halfCarryFlag, carryFlag) => {
 };
 
 const instructions = {};
+
 const generateInstruction = (mnemonic, description, flags) => {
   const instruction = {};
+
   if (mnemonic) {
     instruction.mnemonic = mnemonic;
   }
+
   if (description) {
     instruction.description = description;
   }
+
   if (flags) {
     instruction.flags = flags;
   }
 
   instructions[mnemonic] = instruction;
-};
+}; // Now we can generate our individual opcodes
 
-// Now we can generate our individual opcodes
+
 const opcodes = {};
 const cbOpcodes = {};
+
 const hexToString = hex => `0x${hex.toString(16).toUpperCase().padStart(2, '0')}`;
+
 const generateOpcode = (hex, mnemonic, params, cycles, flagOverrides, isCB) => {
   const instruction = instructions[mnemonic];
   const opcode = {
@@ -74,9 +116,7 @@ const generateOpcode = (hex, mnemonic, params, cycles, flagOverrides, isCB) => {
     params,
     cycles,
     isConditional: typeof cylces === 'array',
-    instruction: {
-      ...instruction
-    }
+    instruction: _objectSpread({}, instruction)
   };
 
   if (flagOverrides) {
@@ -88,9 +128,9 @@ const generateOpcode = (hex, mnemonic, params, cycles, flagOverrides, isCB) => {
   } else {
     opcodes[hexToString(hex)] = opcode;
   }
-};
+}; // For instructions like 0x80 -> 0x87
 
-// For instructions like 0x80 -> 0x87
+
 const generateSimpleArithmeticOpcodeSet = (startHex, mnemonic) => {
   generateOpcode(startHex + 0, mnemonic, ['A', 'B'], 4);
   generateOpcode(startHex + 1, mnemonic, ['A', 'C'], 4);
@@ -100,9 +140,9 @@ const generateSimpleArithmeticOpcodeSet = (startHex, mnemonic) => {
   generateOpcode(startHex + 5, mnemonic, ['A', 'L'], 4);
   generateOpcode(startHex + 6, mnemonic, ['A', '[HL]'], 8);
   generateOpcode(startHex + 7, mnemonic, ['A', 'A'], 4);
-};
+}; // For our Simple CB Opcodes
 
-// For our Simple CB Opcodes
+
 const generateSimpleCBOpcodeSet = (startHex, mnemonic, constantNumberedParam) => {
   generateOpcode(startHex + 0, mnemonic, ['B'], 8, undefined, true);
   generateOpcode(startHex + 1, mnemonic, ['C'], 8, undefined, true);
@@ -118,68 +158,51 @@ const generateSimpleCBOpcodeSet = (startHex, mnemonic, constantNumberedParam) =>
       cbOpcodes[hexToString(startHex + i)].params.unshift(constantNumberedParam);
     }
   }
-};
+}; // Generate our numbered CB params
 
-// Generate our numbered CB params
+
 const generateNumberedCBOpcodeSet = (startHex, mnemonic) => {
   for (let i = 0; i < 8; i++) {
     generateSimpleCBOpcodeSet(startHex + i * 8, mnemonic, i);
   }
-};
+}; // ADC
 
-// ADC
+
 generateInstruction('ADC', 'Adds the parameters, plus the carry flag', generateFlags(true, 0, true, true));
 generateSimpleArithmeticOpcodeSet(0x88, 'ADC');
-generateOpcode(0xce, 'ADC', ['A', 'n8'], 8);
+generateOpcode(0xce, 'ADC', ['A', 'n8'], 8); // ADD
 
-// ADD
 generateInstruction('ADD', 'Adds the parameters', generateFlags(true, 0, true, true));
 generateSimpleArithmeticOpcodeSet(0x80, 'ADD');
-generateOpcode(0xc6, 'ADD', ['A', 'n8'], 8);
+generateOpcode(0xc6, 'ADD', ['A', 'n8'], 8); // AND
 
-// AND
 generateInstruction('AND', 'Bitwise AND between the parameters', generateFlags(true, 0, 1, 0));
 generateSimpleArithmeticOpcodeSet(0xa0, 'AND');
-generateOpcode(0xe6, 'AND', ['A', 'n8'], 8);
+generateOpcode(0xe6, 'AND', ['A', 'n8'], 8); // BIT
 
-// BIT
 generateInstruction('BIT', 'Test bit, set the zero flag if bit not set.', generateFlags(true, 0, 1, undefined));
-generateNumberedCBOpcodeSet(0x40, 'BIT');
+generateNumberedCBOpcodeSet(0x40, 'BIT'); // CALL
 
-// CALL
 generateInstruction('CALL', 'Calls address. Old address pushed onto the stack', generateFlags(true, 0, 1, undefined));
 generateOpcode(0xc4, 'CALL', ['NZ', 'n16'], [24, 12]);
 generateOpcode(0xd4, 'CALL', ['NC', 'n16'], [24, 12]);
 generateOpcode(0xcc, 'CALL', ['Z', 'n16'], [24, 12]);
 generateOpcode(0xdc, 'CALL', ['C', 'n16'], [24, 12]);
-generateOpcode(0xcd, 'CALL', ['n16'], 24);
+generateOpcode(0xcd, 'CALL', ['n16'], 24); // CCF
 
-// CCF
 generateInstruction('CCF', 'Complement Carry Flag', generateFlags(undefined, 0, 0, 'Complemented'));
-generateOpcode(0x3f, 'CCF', [], 4);
+generateOpcode(0x3f, 'CCF', [], 4); // CP
 
-// CP
-generateInstruction(
-  'CP',
-  "Subtract the value, set flags accordingly, but don't store the result.",
-  generateFlags(true, 1, 'Set if no borrow from bit 4.', 'Set if no borrow (set if r8 > A).')
-);
+generateInstruction('CP', "Subtract the value, set flags accordingly, but don't store the result.", generateFlags(true, 1, 'Set if no borrow from bit 4.', 'Set if no borrow (set if r8 > A).'));
 generateSimpleArithmeticOpcodeSet(0xb8, 'CP');
-generateOpcode(0xfe, 'CP', ['A', 'n8'], 8);
+generateOpcode(0xfe, 'CP', ['A', 'n8'], 8); // CPL
 
-// CPL
 generateInstruction('CPL', 'Complement accumulator.', generateFlags(undefined, 1, 1, undefined));
-generateOpcode(0x2f, 'CPL', [], 4);
+generateOpcode(0x2f, 'CPL', [], 4); // DAA
 
-// DAA
-generateInstruction(
-  'DAA',
-  'Decimal adjust register A (accumulator) to get a correct BCD representation after an arithmetic instruction.',
-  generateFlags(true, undefined, true, 'Set or reset depending on the operation.')
-);
-generateOpcode(0x27, 'DAA', [], 4);
+generateInstruction('DAA', 'Decimal adjust register A (accumulator) to get a correct BCD representation after an arithmetic instruction.', generateFlags(true, undefined, true, 'Set or reset depending on the operation.'));
+generateOpcode(0x27, 'DAA', [], 4); // DEC
 
-// DEC
 generateInstruction('DEC', 'Decrement the value pointed by HL by 1.', generateFlags(true, 1, 'Set if no borrow from bit 4.', undefined));
 generateOpcode(0x05, 'DEC', ['B'], 4);
 generateOpcode(0x15, 'DEC', ['D'], 4);
@@ -192,25 +215,17 @@ generateOpcode(0x3b, 'DEC', ['SP'], 8);
 generateOpcode(0x0d, 'DEC', ['C'], 4);
 generateOpcode(0x1d, 'DEC', ['E'], 4);
 generateOpcode(0x2d, 'DEC', ['L'], 4);
-generateOpcode(0x3d, 'DEC', ['A'], 4);
+generateOpcode(0x3d, 'DEC', ['A'], 4); // DI
 
-// DI
 generateInstruction('DI', 'Disable interrupts', generateFlags(undefined, undefined, undefined, undefined));
-generateOpcode(0xf3, 'DI', [], 4);
+generateOpcode(0xf3, 'DI', [], 4); // EI
 
-// EI
 generateInstruction('EI', 'Enabled interrupts', generateFlags(undefined, undefined, undefined, undefined));
-generateOpcode(0xfb, 'EI', [], 4);
+generateOpcode(0xfb, 'EI', [], 4); // HALT
 
-// HALT
-generateInstruction(
-  'HALT',
-  'Enter CPU low power mode. Or Double Speed mode for CGB',
-  generateFlags(undefined, undefined, undefined, undefined)
-);
-generateOpcode(0x76, 'HALT', [], 4);
+generateInstruction('HALT', 'Enter CPU low power mode. Or Double Speed mode for CGB', generateFlags(undefined, undefined, undefined, undefined));
+generateOpcode(0x76, 'HALT', [], 4); // INC
 
-// INC
 generateInstruction('INC', 'Increment value.', generateFlags(true, 0, true, undefined));
 generateOpcode(0x03, 'INC', ['BC'], 8);
 generateOpcode(0x13, 'INC', ['DE'], 8);
@@ -223,34 +238,32 @@ generateOpcode(0x34, 'INC', ['[HL]'], 12);
 generateOpcode(0x0c, 'INC', ['C'], 4);
 generateOpcode(0x1c, 'INC', ['E'], 4);
 generateOpcode(0x2c, 'INC', ['L'], 4);
-generateOpcode(0x3c, 'INC', ['A'], 4);
+generateOpcode(0x3c, 'INC', ['A'], 4); // JP
 
-// JP
 generateInstruction('JP', 'Jump to address.', generateFlags(undefined, undefined, undefined, undefined));
 generateOpcode(0xc2, 'JP', ['NZ', 'n16'], [16, 12]);
 generateOpcode(0xd2, 'JP', ['NC', 'n16'], [16, 12]);
 generateOpcode(0xca, 'JP', ['Z', 'n16'], [16, 12]);
 generateOpcode(0xda, 'JP', ['C', 'n16'], [16, 12]);
 generateOpcode(0xc3, 'JP', ['n16'], 16);
-generateOpcode(0xe9, 'JP', ['[HL]'], 16);
+generateOpcode(0xe9, 'JP', ['[HL]'], 16); // JR
 
-// JR
 generateInstruction('JR', 'Jump to address relative to the current address.', generateFlags(undefined, undefined, undefined, undefined));
 generateOpcode(0x20, 'JR', ['NZ', 'n8'], [12, 8]);
 generateOpcode(0x30, 'JR', ['NC', 'n8'], [12, 8]);
 generateOpcode(0x28, 'JR', ['Z', 'n8'], [12, 8]);
 generateOpcode(0x38, 'JR', ['C', 'n8'], [12, 8]);
-generateOpcode(0x18, 'JR', ['n16'], 12);
+generateOpcode(0x18, 'JR', ['n16'], 12); // LD
 
-// LD
-generateInstruction('LD', 'Load value into destination.', generateFlags(undefined, undefined, undefined, undefined));
-// Generate our Load Columns
+generateInstruction('LD', 'Load value into destination.', generateFlags(undefined, undefined, undefined, undefined)); // Generate our Load Columns
+
 const generateLoadColumns = (startHex, changingParams, constantParam) => {
   for (let i = 0; i < changingParams.length; i++) {
     const hex = startHex + 0x10 * i;
     generateOpcode(hex, 'LD', [changingParams[i], constantParam], 8);
   }
 };
+
 generateOpcode(0x01, 'LD', ['BC', 'd16'], 12);
 generateOpcode(0x11, 'LD', ['DE', 'd16'], 12);
 generateOpcode(0x21, 'LD', ['HL', 'd16'], 12);
@@ -275,12 +288,12 @@ loadRegisterParams.forEach(firstParam => {
     }
 
     let loadCycles = 4;
+
     if (firstParam === '[HL]' || secondParam === '[HL]') {
       loadCycles = 8;
     }
 
     generateOpcode(loadRowHex, 'LD', [firstParam, secondParam], loadCycles);
-
     loadRowHex++;
   });
 });
@@ -289,91 +302,70 @@ generateOpcode(0xF2, 'LD', ['A', '[C]'], 8);
 generateOpcode(0xF8, 'LD', ['HL', 'SP+d8'], 12, generateFlags(0, 0, true, true));
 generateOpcode(0xF9, 'LD', ['SP', 'HL'], 8);
 generateOpcode(0xEA, 'LD', ['d16', 'A'], 16);
-generateOpcode(0xFA, 'LD', ['A', 'd16'], 16);
+generateOpcode(0xFA, 'LD', ['A', 'd16'], 16); // LDH
 
-// LDH
 generateInstruction('LDH', 'Load value into destination. Where the value is 0xFF00 + d8', generateFlags(undefined, undefined, undefined, undefined));
 generateOpcode(0xE0, 'LDH', ['d8', 'A'], 12);
-generateOpcode(0xF0, 'LDH', ['A', 'd8'], 12);
+generateOpcode(0xF0, 'LDH', ['A', 'd8'], 12); // NOP
 
-// NOP
 generateInstruction('NOP', 'No Operation.', generateFlags(undefined, undefined, undefined, undefined));
-generateOpcode(0x00, 'NOP', [], 4);
+generateOpcode(0x00, 'NOP', [], 4); // OR
 
-// OR
 generateInstruction('OR', 'Bitwise OR.', generateFlags(true, 0, 0, 0));
 generateSimpleArithmeticOpcodeSet(0xb0, 'OR');
-generateOpcode(0xf6, 'OR', ['n8'], 8);
+generateOpcode(0xf6, 'OR', ['n8'], 8); // POP
 
-// POP
 generateInstruction('POP', 'Pop value from the stack.', generateFlags(undefined, undefined, undefined, undefined));
 generateOpcode(0xc1, 'POP', ['BC'], 12);
 generateOpcode(0xd1, 'POP', ['DE'], 12);
 generateOpcode(0xe1, 'POP', ['HL'], 12);
-generateOpcode(0xf1, 'POP', ['AF'], 12);
+generateOpcode(0xf1, 'POP', ['AF'], 12); // PUSH
 
-// PUSH
-generateInstruction(
-  'PUSH',
-  "Push register AF into the stack. The low byte's bit 7 corresponds to the Z flag, its bit 6 to the N flag, bit 5 to the H flag, and bit 4 to the C flag. Bits 3 to 0 are reset.",
-  generateFlags(undefined, undefined, undefined, undefined)
-);
+generateInstruction('PUSH', "Push register AF into the stack. The low byte's bit 7 corresponds to the Z flag, its bit 6 to the N flag, bit 5 to the H flag, and bit 4 to the C flag. Bits 3 to 0 are reset.", generateFlags(undefined, undefined, undefined, undefined));
 generateOpcode(0xc5, 'PUSH', ['BC'], 16);
 generateOpcode(0xd5, 'PUSH', ['DE'], 16);
 generateOpcode(0xe5, 'PUSH', ['HL'], 16);
-generateOpcode(0xf5, 'PUSH', ['AF'], 16);
+generateOpcode(0xf5, 'PUSH', ['AF'], 16); // RES
 
-// RES
 generateInstruction('RES', 'Set bit on value', generateFlags(undefined, undefined, undefined, undefined));
-generateNumberedCBOpcodeSet(0x80, 'RES');
+generateNumberedCBOpcodeSet(0x80, 'RES'); // RET
 
-// RET
 generateInstruction('RET', 'Return from subroutine', generateFlags(undefined, undefined, undefined, undefined));
 generateOpcode(0xc0, 'RET', ['NZ'], [20, 8]);
 generateOpcode(0xd0, 'RET', ['NC'], [20, 8]);
 generateOpcode(0xc8, 'RET', ['Z'], [20, 8]);
 generateOpcode(0xd8, 'RET', ['C'], [20, 8]);
-generateOpcode(0xc9, 'RET', [], 16);
+generateOpcode(0xc9, 'RET', [], 16); // RETI
 
-// RETI
 generateInstruction('RETI', 'return from subroutine, and enable interrupts', generateFlags(undefined, undefined, undefined, undefined));
-generateOpcode(0xd9, 'RETI', [], 16);
-
-// Left
+generateOpcode(0xd9, 'RETI', [], 16); // Left
 // RL
+
 generateInstruction('RL', 'Rotate value left through carry. (C <- [7 <- 0] <- C)', generateFlags(true, 0, 0, true));
-generateSimpleCBOpcodeSet(0x10, 'RL');
+generateSimpleCBOpcodeSet(0x10, 'RL'); // RLA
 
-// RLA
 generateInstruction('RLA', 'Rotate register A left through carry. (C <- [7 <- 0] <- C)', generateFlags(0, 0, 0, true));
-generateOpcode(0x17, 'RLA', [], 4);
+generateOpcode(0x17, 'RLA', [], 4); // RLC
 
-// RLC
 generateInstruction('RLC', 'Rotate value left. (C <- [7 <- 0] <- [7])', generateFlags(true, 0, 0, true));
-generateSimpleCBOpcodeSet(0x00, 'RLC');
+generateSimpleCBOpcodeSet(0x00, 'RLC'); // RLCA
 
-// RLCA
 generateInstruction('RLCA', 'Rotate register A left. (C <- [7 <- 0] <- [7])', generateFlags(0, 0, 0, true));
-generateOpcode(0x07, 'RLCA', [], 4);
-
-// Right
+generateOpcode(0x07, 'RLCA', [], 4); // Right
 // RR
+
 generateInstruction('RR', 'Rotate value right through carry. (C -> [7 -> 0] -> C)', generateFlags(true, 0, 0, true));
-generateSimpleCBOpcodeSet(0x18, 'RR');
+generateSimpleCBOpcodeSet(0x18, 'RR'); // RRA
 
-// RRA
 generateInstruction('RRA', 'Rotate register A right through carry. (C -> [7 -> 0] -> C)', generateFlags(0, 0, 0, true));
-generateOpcode(0x1f, 'RRA', [], 4);
+generateOpcode(0x1f, 'RRA', [], 4); // RRC
 
-// RRC
 generateInstruction('RRC', 'Rotate value right. (C -> [7 -> 0] -> [7])', generateFlags(true, 0, 0, true));
-generateSimpleCBOpcodeSet(0x08, 'RR');
+generateSimpleCBOpcodeSet(0x08, 'RR'); // RRCA
 
-// RRCA
 generateInstruction('RRCA', 'Rotate register A right. (C -> [7 -> 0] -> [7])', generateFlags(0, 0, 0, true));
-generateOpcode(0x0f, 'RRCA', [], 4);
+generateOpcode(0x0f, 'RRCA', [], 4); // RST
 
-// RST
 generateInstruction('RST', 'Call restart vector.', generateFlags(undefined, undefined, undefined, undefined));
 generateOpcode(0xc7, 'RST', ['0x00'], 16);
 generateOpcode(0xd7, 'RST', ['0x10'], 16);
@@ -382,80 +374,56 @@ generateOpcode(0xf7, 'RST', ['0x30'], 16);
 generateOpcode(0xcf, 'RST', ['0x08'], 16);
 generateOpcode(0xdf, 'RST', ['0x18'], 16);
 generateOpcode(0xef, 'RST', ['0x28'], 16);
-generateOpcode(0xff, 'RST', ['0x38'], 16);
+generateOpcode(0xff, 'RST', ['0x38'], 16); // SBC
 
-// SBC
-generateInstruction(
-  'SBC',
-  'Subtract the value and the carry flag from A.',
-  generateFlags(true, 1, 'Set if no borrow from bit 4.', 'Set if no borrow (set if r8 > A).')
-);
+generateInstruction('SBC', 'Subtract the value and the carry flag from A.', generateFlags(true, 1, 'Set if no borrow from bit 4.', 'Set if no borrow (set if r8 > A).'));
 generateSimpleArithmeticOpcodeSet(0x98, 'SBC');
-generateOpcode(0xde, 'SBC', ['n8'], 8);
+generateOpcode(0xde, 'SBC', ['n8'], 8); // SCF
 
-// SCF
 generateInstruction('SCF', 'Set Carry Flag.', generateFlags(undefined, 0, 0, 1));
-generateOpcode(0x37, 'SCF', ['n8'], 8);
+generateOpcode(0x37, 'SCF', ['n8'], 8); // SET
 
-// SET
 generateInstruction('SET', 'Set bit on value.', generateFlags(undefined, undefined, undefined, undefined));
-generateNumberedCBOpcodeSet(0xc0, 'SET');
+generateNumberedCBOpcodeSet(0xc0, 'SET'); // SLA
 
-// SLA
 generateInstruction('SLA', 'Shift left arithmetic. (C <- [7 <- 0] <- 0)', generateFlags(true, 0, 0, true));
-generateSimpleCBOpcodeSet(0x20, 'SLA');
+generateSimpleCBOpcodeSet(0x20, 'SLA'); // SRA
 
-// SRA
 generateInstruction('SRA', 'Shift right arithmetic. ([7] -> [7 -> 0] -> C)', generateFlags(true, 0, 0, true));
-generateSimpleCBOpcodeSet(0x28, 'SRA');
+generateSimpleCBOpcodeSet(0x28, 'SRA'); // SRL
 
-// SRL
 generateInstruction('SRL', 'Shift right logic. (0 -> [7 -> 0] -> C)', generateFlags(true, 0, 0, true));
-generateSimpleCBOpcodeSet(0x28, 'SRL');
+generateSimpleCBOpcodeSet(0x28, 'SRL'); // STOP
 
-// STOP
-generateInstruction(
-  'STOP',
-  'GB: Enter CPU Very Low Power Mode. GBC: Enter Double Speed Mode.',
-  generateFlags(undefined, undefined, undefined)
-);
-generateOpcode(0x10, 'STOP', ['n8'], 8);
+generateInstruction('STOP', 'GB: Enter CPU Very Low Power Mode. GBC: Enter Double Speed Mode.', generateFlags(undefined, undefined, undefined));
+generateOpcode(0x10, 'STOP', ['n8'], 8); // SUB
 
-// SUB
-generateInstruction(
-  'SUB',
-  'Subtract the values',
-  generateFlags(true, 1, 'Set if no borrow from bit 4.', 'Set if no borrow (set if r8 > A).')
-);
+generateInstruction('SUB', 'Subtract the values', generateFlags(true, 1, 'Set if no borrow from bit 4.', 'Set if no borrow (set if r8 > A).'));
 generateSimpleArithmeticOpcodeSet(0x90, 'SUB');
-generateOpcode(0xd6, 'SUB', ['n8'], 8);
+generateOpcode(0xd6, 'SUB', ['n8'], 8); // SWAP
 
-// SWAP
 generateInstruction('SWAP', 'Swap upper 4 bits in the value with the lower ones.', generateFlags(true, 0, 0, 0));
-generateSimpleCBOpcodeSet(0x30, 'SRL');
+generateSimpleCBOpcodeSet(0x30, 'SRL'); // XOR
 
-// XOR
 generateInstruction('XOR', 'Bitwise XOR between the values.', generateFlags(true, 0, 0, 0));
 generateSimpleArithmeticOpcodeSet(0xa8, 'XOR');
-generateOpcode(0xee, 'XOR', ['n8'], 8);
+generateOpcode(0xee, 'XOR', ['n8'], 8); // Finally, sort by hex Code
 
-// Finally, sort by hex Code
 const opcodeKeys = Object.keys(opcodes);
 const cbOpcodeKeys = Object.keys(cbOpcodes);
 opcodeKeys.sort();
 cbOpcodeKeys.sort();
-
 const sortedOpcodes = {};
 opcodeKeys.forEach(key => {
   sortedOpcodes[key] = opcodes[key];
 });
-
 const sortedCbOpcodes = {};
 cbOpcodeKeys.forEach(key => {
   sortedCbOpcodes[key] = cbOpcodes[key];
 });
-
-export const GBOpcodes = {
+const GBOpcodes = {
   opcodes: sortedOpcodes,
   cbOpcodes: sortedCbOpcodes
 };
+
+exports.GBOpcodes = GBOpcodes;
