@@ -1,5 +1,5 @@
 
-const GBOpcodes = require('../dist/gb-instructions-opcodes.cjs');
+const {GBOpcodes} = require('../dist/gb-instructions-opcodes.cjs');
 
 var assert = require('assert');
 describe('GB Instructions Opcodes', function() {
