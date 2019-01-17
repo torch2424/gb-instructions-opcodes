@@ -11,7 +11,11 @@
     "build": "npx rollup -c",
     "dev": "npm run watch",
     "watch": "npx rollup -c -w",
-    "test": "npx mocha"
+    "test": "npx mocha",
+    "lib:deploy": "npx run-s build lib:deploy:np",
+    "lib:deploy:np": "npx np",
+    "demo:deploy": "npx run-s build demo:deploy:pages",
+    "demo:deploy:pages": "npx gh-pages -d build"
   },
   "repository": {
     "type": "git",
@@ -40,7 +44,10 @@
     "@babel/plugin-proposal-export-default-from": "^7.2.0",
     "@babel/plugin-proposal-object-rest-spread": "^7.2.0",
     "@babel/plugin-transform-react-jsx": "^7.2.0",
+    "gh-pages": "^2.0.1",
     "mocha": "^5.2.0",
+    "np": "^3.1.0",
+    "npm-run-all": "^4.1.5",
     "rollup": "^1.1.0",
     "rollup-plugin-babel": "^4.3.0",
     "rollup-plugin-commonjs": "^9.2.0",
