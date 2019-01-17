@@ -17,6 +17,11 @@
     "demo:deploy": "npx run-s build demo:deploy:pages",
     "demo:deploy:pages": "npx gh-pages -d build"
   },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
   "repository": {
     "type": "git",
     "url": "git+https://github.com/torch2424/gb-instructions-opcodes.git"
