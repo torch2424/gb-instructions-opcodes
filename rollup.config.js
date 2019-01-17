@@ -2,6 +2,7 @@ import resolve from 'rollup-plugin-node-resolve';
 import commonjs from 'rollup-plugin-commonjs';
 import babel from 'rollup-plugin-babel';
 import serve from 'rollup-plugin-serve';
+import bundleSize from 'rollup-plugin-bundle-size';
 import pkg from './package.json';
 
 const fs = require('fs');
@@ -28,7 +29,7 @@ const babelPluginConfig = {
 let plugins = [
   resolve(), // so Rollup can find node modules
   commonjs(), // so Rollup can convert node module to an ES module
-  babel(babelPluginConfig)
+  babel(babelPluginConfig),
 ];
 
 if (process.env.ROLLUP_WATCH) {
@@ -40,6 +41,11 @@ if (process.env.ROLLUP_WATCH) {
     })
   ]
 }
+
+plugins = [
+  ...plugins,
+  bundleSize()
+];
 
 writeIndexHtmlToBuild('index.iife.js');
 
