@@ -172,8 +172,13 @@
   generateOpcode(0xce, 'ADC', ['A', 'n8'], 8); // ADD
 
   generateInstruction('ADD', 'Adds the parameters', generateFlags(true, 0, true, true));
+  generateOpcode(0x09, 'ADD', ['HL', 'BC'], 8);
+  generateOpcode(0x19, 'ADD', ['HL', 'DE'], 8);
+  generateOpcode(0x29, 'ADD', ['HL', 'HL'], 8);
+  generateOpcode(0x39, 'ADD', ['HL', 'SP'], 8);
   generateSimpleArithmeticOpcodeSet(0x80, 'ADD');
-  generateOpcode(0xc6, 'ADD', ['A', 'n8'], 8); // AND
+  generateOpcode(0xC6, 'ADD', ['A', 'n8'], 8);
+  generateOpcode(0xE8, 'ADD', ['SP', 'n8'], 16); // AND
 
   generateInstruction('AND', 'Bitwise AND between the parameters', generateFlags(true, 0, 1, 0));
   generateSimpleArithmeticOpcodeSet(0xa0, 'AND');
@@ -264,13 +269,13 @@
   };
 
   generateOpcode(0x01, 'LD', ['BC', 'd16'], 12);
+  generateOpcode(0x08, 'LD', ['d16', 'SP'], 20);
   generateOpcode(0x11, 'LD', ['DE', 'd16'], 12);
   generateOpcode(0x21, 'LD', ['HL', 'd16'], 12);
   generateOpcode(0x31, 'LD', ['SP', 'd16'], 12);
   generateLoadColumns(0x02, ['[BC]', '[DE]', '[HL+]', '[HL-]'], 'A');
   generateLoadColumns(0x06, ['B', 'D', 'H'], 'd8');
-  generateOpcode(0x08, 'LD', ['d16', 'SP'], 20);
-  generateOpcode(0x32, 'LD', ['[HL]', 'd8'], 12);
+  generateOpcode(0x36, 'LD', ['[HL]', 'd8'], 12);
   generateOpcode(0x0A, 'LD', ['A', '[BC]'], 8);
   generateOpcode(0x1A, 'LD', ['A', '[DE]'], 8);
   generateOpcode(0x2A, 'LD', ['A', '[HL+]'], 8);
@@ -392,7 +397,7 @@
   generateSimpleCBOpcodeSet(0x28, 'SRA'); // SRL
 
   generateInstruction('SRL', 'Shift right logic. (0 -> [7 -> 0] -> C)', generateFlags(true, 0, 0, true));
-  generateSimpleCBOpcodeSet(0x28, 'SRL'); // STOP
+  generateSimpleCBOpcodeSet(0x38, 'SRL'); // STOP
 
   generateInstruction('STOP', 'GB: Enter CPU Very Low Power Mode. GBC: Enter Double Speed Mode.', generateFlags(undefined, undefined, undefined));
   generateOpcode(0x10, 'STOP', ['n8'], 8); // SUB
@@ -420,9 +425,21 @@
   cbOpcodeKeys.forEach(key => {
     sortedCbOpcodes[key] = cbOpcodes[key];
   });
+
+  const getNumberAsOpcodeHex = hex => {
+    return `0x${hex.toString(16).toUpperCase().padStart(2, '0')}`;
+  };
+
   const GBOpcodes = {
     opcodes: sortedOpcodes,
-    cbOpcodes: sortedCbOpcodes
+    cbOpcodes: sortedCbOpcodes,
+    getNumberAsOpcodeHex,
+    getOpcode: hex => {
+      return sortedOpcodes[getNumberAsOpcodeHex(hex)];
+    },
+    getCbOpcode: hex => {
+      return sortedCbOpcodes[getNumberAsOpcodeHex(hex)];
+    }
   };
 
   const containerElement = document.querySelector('#container');
