@@ -1,6 +1,6 @@
 {
   "name": "gb-instructions-opcodes",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Game Boy / Game Boy Color Instructions and Opcodes Reference as an ES Module and JSON",
   "main": "dist/gb-instructions-opcodes.cjs.js",
   "module": "dist/gb-instructions-opcodes.esm.js",
